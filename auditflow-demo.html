@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuditFlow — Engagement Tracker Demo</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.x/dist/tabler-icons.min.css">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f2; color: #1a1a18; font-size: 14px; }
+  .app { display: flex; height: 100vh; min-height: 600px; }
+
+  /* Sidebar */
+  .sidebar { width: 220px; min-width: 220px; background: #fff; border-right: 0.5px solid rgba(0,0,0,0.12); padding: 20px 0; display: flex; flex-direction: column; }
+  .sidebar-logo { padding: 0 20px 20px; border-bottom: 0.5px solid rgba(0,0,0,0.12); }
+  .sidebar-logo .logo-name { font-size: 15px; font-weight: 600; color: #1a1a18; }
+  .sidebar-logo .logo-sub { font-size: 11px; color: #888; margin-top: 2px; }
+  .nav-section { padding: 16px 12px 8px; font-size: 11px; font-weight: 600; color: #aaa; letter-spacing: 0.05em; text-transform: uppercase; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 0 8px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #666; transition: background 0.15s; }
+  .nav-item:hover { background: #f0efea; }
+  .nav-item.active { background: #f0efea; color: #1a1a18; font-weight: 500; }
+  .nav-item i { font-size: 16px; }
+  .sidebar-bottom { margin-top: auto; padding: 16px; border-top: 0.5px solid rgba(0,0,0,0.12); }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500; flex-shrink: 0; }
+  .user-chip-display { display: flex; align-items: center; gap: 8px; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { padding: 16px 24px; background: #fff; border-bottom: 0.5px solid rgba(0,0,0,0.12); display: flex; align-items: center; justify-content: space-between; }
+  .topbar h1 { font-size: 16px; font-weight: 500; }
+  .btn { padding: 7px 14px; border-radius: 6px; border: 0.5px solid rgba(0,0,0,0.2); background: transparent; color: #1a1a18; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: background 0.15s; font-family: inherit; }
+  .btn:hover { background: #f5f5f2; }
+  .btn-primary { background: #1a1a18; color: #fff; border-color: transparent; }
+  .btn-primary:hover { background: #333; }
+  .btn-sm { padding: 5px 10px; font-size: 12px; }
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+
+  /* Stats */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: #f0efea; border-radius: 8px; padding: 16px; }
+  .stat-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+  .stat-value { font-size: 22px; font-weight: 500; }
+  .stat-sub { font-size: 11px; color: #888; margin-top: 4px; }
+
+  /* Table */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 14px; font-weight: 500; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn { padding: 5px 10px; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.2); background: transparent; font-size: 12px; cursor: pointer; color: #666; font-family: inherit; transition: all 0.15s; }
+  .filter-btn.active { background: #1a1a18; color: #fff; border-color: transparent; }
+  .project-table { background: #fff; border-radius: 10px; border: 0.5px solid rgba(0,0,0,0.12); overflow: hidden; }
+  .table-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px; gap: 8px; padding: 10px 16px; background: #f9f9f7; border-bottom: 0.5px solid rgba(0,0,0,0.1); font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; }
+  .project-row { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 80px; gap: 8px; padding: 12px 16px; border-bottom: 0.5px solid rgba(0,0,0,0.07); cursor: pointer; transition: background 0.1s; align-items: center; }
+  .project-row:last-child { border-bottom: none; }
+  .project-row:hover { background: #f9f9f7; }
+  .project-name { font-size: 13px; font-weight: 500; }
+  .project-meta { font-size: 11px; color: #888; margin-top: 2px; }
+
+  /* Badges */
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+  .badge-on-track { background: #EAF3DE; color: #3B6D11; }
+  .badge-overdue { background: #FCEBEB; color: #A32D2D; }
+  .badge-approaching { background: #FAEEDA; color: #854F0B; }
+  .badge-needs-approval { background: #E6F1FB; color: #185FA5; }
+  .badge-completed { background: #E1F5EE; color: #0F6E56; }
+  .badge-not-started { background: #F1EFE8; color: #5F5E5A; }
+  .badge-paused { background: #FBEAF0; color: #993556; }
+
+  /* Progress */
+  .progress-wrap { background: rgba(0,0,0,0.08); border-radius: 4px; height: 5px; width: 100%; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 4px; }
+  .progress-pct { font-size: 11px; color: #888; margin-top: 3px; }
+
+  /* Priority */
+  .priority-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+  .priority-high { background: #E24B4A; }
+  .priority-medium { background: #EF9F27; }
+  .priority-low { background: #639922; }
+
+  /* Row actions */
+  .row-actions { display: flex; gap: 4px; justify-content: flex-end; opacity: 0; transition: opacity 0.15s; }
+  .project-row:hover .row-actions { opacity: 1; }
+  .icon-btn { width: 26px; height: 26px; border-radius: 5px; border: none; background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #888; transition: background 0.15s; }
+  .icon-btn:hover { background: #eee; }
+
+  /* Modal */
+  .modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 1000; padding: 20px; }
+  .modal { background: #fff; border-radius: 12px; width: 600px; max-width: 100%; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px 0; display: flex; align-items: center; justify-content: space-between; }
+  .modal-title { font-size: 15px; font-weight: 500; }
+  .modal-body { padding: 20px 24px; }
+  .modal-footer { padding: 0 24px 20px; display: flex; gap: 8px; justify-content: flex-end; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  label { font-size: 12px; font-weight: 500; color: #666; }
+  input, select, textarea { border: 0.5px solid rgba(0,0,0,0.2); border-radius: 6px; padding: 8px 10px; font-size: 13px; background: #fff; color: #1a1a18; font-family: inherit; outline: none; transition: border-color 0.15s; width: 100%; }
+  input:focus, select:focus, textarea:focus { border-color: rgba(0,0,0,0.4); }
+  textarea { resize: vertical; min-height: 70px; }
+  .user-select { display: flex; flex-wrap: wrap; gap: 6px; }
+  .user-chip-sel { display: flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 20px; border: 0.5px solid rgba(0,0,0,0.2); cursor: pointer; font-size: 12px; transition: all 0.15s; }
+  .user-chip-sel.selected { background: #1a1a18; color: #fff; border-color: transparent; }
+
+  /* Alerts */
+  .alert-bar { padding: 8px 16px; font-size: 12px; display: flex; align-items: center; gap: 8px; border-radius: 6px; margin-bottom: 10px; }
+  .alert-danger { background: #FCEBEB; color: #A32D2D; }
+  .alert-warn { background: #FAEEDA; color: #854F0B; }
+  .alert-info { background: #E6F1FB; color: #185FA5; }
+
+  /* Empty */
+  .empty { text-align: center; padding: 60px 20px; color: #888; }
+  .empty i { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.4; }
+
+  /* Avatar stack */
+  .avatar-stack { display: flex; }
+  .avatar-stack .avatar { width: 22px; height: 22px; font-size: 9px; border: 2px solid #fff; margin-left: -6px; }
+  .avatar-stack .avatar:first-child { margin-left: 0; }
+
+  /* Detail panel */
+  .main-and-detail { display: flex; flex: 1; overflow: hidden; }
+  .detail-panel { background: #fff; border-left: 0.5px solid rgba(0,0,0,0.12); width: 380px; min-width: 380px; display: flex; flex-direction: column; overflow: hidden; }
+  .detail-scroll { flex: 1; overflow-y: auto; padding: 20px; }
+  .detail-panel h2 { font-size: 15px; font-weight: 500; margin-bottom: 6px; }
+  .detail-section { margin-top: 18px; }
+  .detail-section h3 { font-size: 11px; font-weight: 600; color: #888; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 10px; }
+  .detail-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 0.5px solid rgba(0,0,0,0.07); font-size: 13px; }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-key { color: #888; }
+
+  /* Notes */
+  .notes-log { display: flex; flex-direction: column; gap: 10px; }
+  .note-entry { background: #f9f9f7; border-radius: 8px; padding: 10px 12px; border: 0.5px solid rgba(0,0,0,0.08); }
+  .note-meta { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; flex-wrap: wrap; }
+  .note-author { font-size: 12px; font-weight: 500; }
+  .note-time { font-size: 11px; color: #888; }
+  .note-text { font-size: 13px; line-height: 1.5; color: #1a1a18; }
+  .note-type-badge { font-size: 10px; padding: 2px 6px; border-radius: 10px; font-weight: 500; margin-left: auto; }
+  .note-type-update { background: #E6F1FB; color: #185FA5; }
+  .note-type-issue { background: #FCEBEB; color: #A32D2D; }
+  .note-type-general { background: #F1EFE8; color: #5F5E5A; }
+  .note-type-approval { background: #EAF3DE; color: #3B6D11; }
+  .note-input-area { border-top: 0.5px solid rgba(0,0,0,0.1); padding: 14px 20px; background: #fff; }
+  .note-input-area textarea { min-height: 60px; margin-bottom: 8px; }
+  .note-controls { display: flex; align-items: center; gap: 8px; }
+  .note-type-sel { width: auto; flex: 1; font-size: 12px; padding: 5px 8px; }
+
+  /* Detail tabs */
+  .detail-tabs { display: flex; border-bottom: 0.5px solid rgba(0,0,0,0.12); }
+  .detail-tab { padding: 10px 16px; font-size: 13px; cursor: pointer; border-bottom: 2px solid transparent; color: #888; transition: all 0.15s; }
+  .detail-tab.active { color: #1a1a18; border-bottom-color: #1a1a18; font-weight: 500; }
+
+  /* Field settings */
+  .field-item { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border: 0.5px solid rgba(0,0,0,0.12); border-radius: 6px; margin-bottom: 8px; }
+  .field-label-text { flex: 1; font-size: 13px; }
+  .tag { padding: 2px 7px; background: #f0efea; border-radius: 4px; font-size: 11px; color: #666; }
+
+  /* User grid */
+  .user-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 24px; }
+  .user-card { background: #fff; border-radius: 10px; border: 0.5px solid rgba(0,0,0,0.12); padding: 14px; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .detail-panel { display: none; }
+    .sidebar { width: 180px; min-width: 180px; }
+  }
+  @media (max-width: 600px) {
+    .sidebar { display: none; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<script>
+const USERS = [
+  { id:'u1', name:'Elizabeth', initials:'EL', color:'#E6F1FB', textColor:'#0C447C' },
+  { id:'u2', name:'Jacob',     initials:'JA', color:'#EAF3DE', textColor:'#3B6D11' },
+  { id:'u3', name:'Zach',      initials:'ZA', color:'#FAEEDA', textColor:'#854F0B' },
+  { id:'u4', name:'Sara',      initials:'SA', color:'#FBEAF0', textColor:'#993556' },
+];
+
+const CURRENT_USER = USERS[0];
+
+const STATUS_CONFIG = {
+  'on-track':      { label:'On track',       cls:'badge-on-track',       icon:'ti-circle-check' },
+  'overdue':       { label:'Overdue',         cls:'badge-overdue',        icon:'ti-alert-circle'  },
+  'approaching':   { label:'Due soon',        cls:'badge-approaching',    icon:'ti-clock'         },
+  'needs-approval':{ label:'Needs approval',  cls:'badge-needs-approval', icon:'ti-thumb-up'      },
+  'completed':     { label:'Completed',       cls:'badge-completed',      icon:'ti-check'         },
+  'not-started':   { label:'Not started',     cls:'badge-not-started',    icon:'ti-minus'         },
+  'paused':        { label:'Paused',          cls:'badge-paused',         icon:'ti-player-pause'  },
+};
+
+const NOTE_TYPES = ['General','Update','Issue','Approval'];
+
+const SAMPLE_PROJECTS = [
+  {
+    id:'p1', name:'Audit TX',
+    description:'Texas state compliance audit covering FY2025 filings and regulatory requirements.',
+    status:'on-track', priority:'high', progress:60,
+    dueDate:'2026-07-15', createdAt:'2026-04-01',
+    ownerId:'u1', assignees:['u1','u2'],
+    state:'TX', fiscalYear:'2025', engagementType:'Compliance',
+    notes:[
+      { id:'n1', authorId:'u1', text:'Kickoff call completed with client. PBC list sent — awaiting responses on items 3, 7, and 12.', type:'Update', timestamp:'2026-05-10T09:15:00' },
+      { id:'n2', authorId:'u2', text:'Received partial PBC responses. Bank recs look clean. Still waiting on fixed asset schedule.', type:'Update', timestamp:'2026-05-20T14:30:00' },
+      { id:'n3', authorId:'u1', text:'Client flagged a reconciling item on the intercompany account — need to follow up before fieldwork begins.', type:'Issue', timestamp:'2026-05-27T11:00:00' },
+    ]
+  },
+  {
+    id:'p2', name:'Audit NC',
+    description:'North Carolina annual audit engagement for fiscal year 2025.',
+    status:'needs-approval', priority:'high', progress:90,
+    dueDate:'2026-06-01', createdAt:'2026-03-15',
+    ownerId:'u2', assignees:['u2','u4'],
+    state:'NC', fiscalYear:'2025', engagementType:'Annual Audit',
+    notes:[
+      { id:'n4', authorId:'u4', text:'Fieldwork complete. Draft financials prepared and sent to manager for review.', type:'Update', timestamp:'2026-05-18T10:00:00' },
+      { id:'n5', authorId:'u2', text:'Manager review in progress. Minor adjustments needed on footnote disclosures — Sara to revise.', type:'Approval', timestamp:'2026-05-25T16:45:00' },
+    ]
+  },
+  {
+    id:'p3', name:'Audit TN',
+    description:'Tennessee engagement — includes review of grant expenditures and federal compliance testing.',
+    status:'overdue', priority:'high', progress:35,
+    dueDate:'2026-05-15', createdAt:'2026-02-10',
+    ownerId:'u3', assignees:['u3','u1'],
+    state:'TN', fiscalYear:'2025', engagementType:'Federal Compliance',
+    notes:[
+      { id:'n6', authorId:'u3', text:'Client has been slow responding to document requests. Escalation email sent to their CFO today.', type:'Issue', timestamp:'2026-05-05T08:30:00' },
+      { id:'n7', authorId:'u1', text:'CFO responded — documents expected by end of week. Adjusting timeline internally.', type:'Update', timestamp:'2026-05-12T13:00:00' },
+      { id:'n8', authorId:'u3', text:'Still missing the grant expenditure detail. This is now pushing us past the original due date.', type:'Issue', timestamp:'2026-05-22T09:45:00' },
+    ]
+  },
+  {
+    id:'p4', name:'Audit CA',
+    description:'California engagement — large client with multiple subsidiaries. Complex consolidation required.',
+    status:'not-started', priority:'medium', progress:0,
+    dueDate:'2026-08-30', createdAt:'2026-05-01',
+    ownerId:'u4', assignees:['u1','u2','u3','u4'],
+    state:'CA', fiscalYear:'2025', engagementType:'Consolidation Audit',
+    notes:[
+      { id:'n9', authorId:'u4', text:'Engagement letter signed. Planning meeting scheduled for June 10th with full team.', type:'General', timestamp:'2026-05-28T10:00:00' },
+    ]
+  },
+];
+
+const DEFAULT_FIELDS = [
+  { id:'cf1', label:'State',           type:'text',   key:'state'          },
+  { id:'cf2', label:'Fiscal Year',     type:'text',   key:'fiscalYear'     },
+  { id:'cf3', label:'Engagement Type', type:'select', key:'engagementType',
+    options:'Compliance,Annual Audit,Federal Compliance,Consolidation Audit,Review,Agreed-Upon Procedures' },
+];
+
+let ST = {
+  view:'dashboard', filter:'all',
+  projects: JSON.parse(localStorage.getItem('af_projects')||'null') || SAMPLE_PROJECTS,
+  fields:   JSON.parse(localStorage.getItem('af_fields')  ||'null') || DEFAULT_FIELDS,
+  modal: null, editingProject: null,
+  selectedProject: null, detailTab:'details',
+  formData: {},
+};
+
+function persist() {
+  localStorage.setItem('af_projects', JSON.stringify(ST.projects));
+  localStorage.setItem('af_fields',   JSON.stringify(ST.fields));
+}
+
+function computeStatus(p) {
+  if (['completed','not-started','paused','needs-approval'].includes(p.status)) return p.status;
+  const diff = Math.ceil((new Date(p.dueDate) - new Date()) / 86400000);
+  if (diff < 0) return 'overdue';
+  if (diff <= 7) return 'approaching';
+  return 'on-track';
+}
+
+function getStats() {
+  const ps = ST.projects;
+  return {
+    total:       ps.length,
+    overdue:     ps.filter(p => computeStatus(p) === 'overdue').length,
+    approaching: ps.filter(p => computeStatus(p) === 'approaching').length,
+    needsApproval: ps.filter(p => computeStatus(p) === 'needs-approval').length,
+    completed:   ps.filter(p => computeStatus(p) === 'completed').length,
+    avgProgress: ps.length ? Math.round(ps.reduce((a,p)=>a+p.progress,0)/ps.length) : 0,
+  };
+}
+
+function getUser(id) { return USERS.find(u=>u.id===id); }
+
+function fmtDate(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
+}
+function fmtTime(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' at ' +
+         d.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+}
+
+// Minimal DOM builder
+function el(tag, attrs, ...kids) {
+  const e = document.createElement(tag);
+  if (attrs) for (const [k,v] of Object.entries(attrs)) {
+    if (k === 'cls') e.className = v;
+    else if (k === 'html') e.innerHTML = v;
+    else if (k.startsWith('on')) e.addEventListener(k.slice(2), v);
+    else e.setAttribute(k, v);
+  }
+  for (const c of kids.flat()) {
+    if (c == null) continue;
+    e.append(typeof c === 'string' ? document.createTextNode(c) : c);
+  }
+  return e;
+}
+
+function avEl(uid, size=28) {
+  const u = getUser(uid);
+  const bg = u ? u.color : '#eee';
+  const tc = u ? u.textColor : '#888';
+  const fs = Math.floor(size*0.38);
+  return el('div',{cls:'avatar',style:`width:${size}px;height:${size}px;background:${bg};color:${tc};font-size:${fs}px`}, u ? u.initials : '?');
+}
+
+function badgeEl(status) {
+  const c = STATUS_CONFIG[status] || STATUS_CONFIG['not-started'];
+  return el('span',{cls:`badge ${c.cls}`}, el('i',{cls:`ti ${c.icon}`,style:'font-size:10px'}), ' '+c.label);
+}
+
+function pBar(pct, color='#1D9E75') {
+  return el('div',{cls:'progress-wrap'},
+    el('div',{cls:'progress-fill',style:`width:${pct}%;background:${color}`})
+  );
+}
+
+/* ── SIDEBAR ── */
+function buildSidebar() {
+  const items = [
+    {icon:'ti-layout-dashboard', label:'Dashboard',     view:'dashboard'},
+    {icon:'ti-list',             label:'All Audits',    view:'projects' },
+    {icon:'ti-user',             label:'My Audits',     view:'mine'     },
+    {icon:'ti-settings',         label:'Field Settings',view:'fields'   },
+  ];
+  const u = CURRENT_USER;
+  return el('aside',{cls:'sidebar'},
+    el('div',{cls:'sidebar-logo'},
+      el('div',{cls:'logo-name'},'AuditFlow'),
+      el('div',{cls:'logo-sub'},'Engagement tracker — Demo')
+    ),
+    el('div',{cls:'nav-section'},'Navigation'),
+    ...items.map(i=>el('div',{cls:`nav-item${ST.view===i.view?' active':''}`,
+      onClick:()=>{ST.view=i.view;ST.selectedProject=null;render();}},
+      el('i',{cls:`ti ${i.icon}`,'aria-hidden':'true'}), i.label)),
+    el('div',{cls:'sidebar-bottom'},
+      el('div',{cls:'user-chip-display'},
+        el('div',{cls:'avatar',style:`background:${u.color};color:${u.textColor};width:28px;height:28px;font-size:11px`},u.initials),
+        el('div',{},
+          el('div',{style:'font-size:12px;font-weight:500'},u.name),
+          el('div',{style:'font-size:11px;color:#888'},'Lead Auditor')
+        )
+      )
+    )
+  );
+}
+
+/* ── DASHBOARD ── */
+function buildDashboard() {
+  const s = getStats();
+  const alerts = [];
+  if (s.overdue>0)      alerts.push(el('div',{cls:'alert-bar alert-danger'},el('i',{cls:'ti ti-alert-circle'}),` ${s.overdue} audit${s.overdue>1?'s are':' is'} overdue — immediate follow-up required.`));
+  if (s.approaching>0)  alerts.push(el('div',{cls:'alert-bar alert-warn'}, el('i',{cls:'ti ti-clock'}),       ` ${s.approaching} audit${s.approaching>1?'s are':' is'} due within 7 days.`));
+  if (s.needsApproval>0)alerts.push(el('div',{cls:'alert-bar alert-info'}, el('i',{cls:'ti ti-thumb-up'}),    ` ${s.needsApproval} audit${s.needsApproval>1?'s need':'needs'} manager approval.`));
+
+  const statsGrid = el('div',{cls:'stats-grid'},
+    el('div',{cls:'stat-card'},el('div',{cls:'stat-label'},'Total engagements'),el('div',{cls:'stat-value'},s.total),el('div',{cls:'stat-sub'},`${s.completed} completed`)),
+    el('div',{cls:'stat-card'},el('div',{cls:'stat-label'},'Overdue'),el('div',{cls:'stat-value',style:s.overdue>0?'color:#A32D2D':''},s.overdue),el('div',{cls:'stat-sub'},'need attention')),
+    el('div',{cls:'stat-card'},el('div',{cls:'stat-label'},'Due within 7 days'),el('div',{cls:'stat-value',style:s.approaching>0?'color:#854F0B':''},s.approaching),el('div',{cls:'stat-sub'},'approaching deadline')),
+    el('div',{cls:'stat-card'},el('div',{cls:'stat-label'},'Avg. progress'),el('div',{cls:'stat-value'},`${s.avgProgress}%`),el('div',{cls:'stat-sub'},'across all audits')),
+  );
+
+  const userGrid = el('div',{cls:'user-grid'});
+  USERS.forEach(u=>{
+    const ups = ST.projects.filter(p=>p.assignees.includes(u.id));
+    if (!ups.length) return;
+    const card = el('div',{cls:'user-card'},
+      el('div',{style:'display:flex;align-items:center;gap:8px;margin-bottom:12px'},
+        el('div',{cls:'avatar',style:`background:${u.color};color:${u.textColor};width:28px;height:28px;font-size:11px`},u.initials),
+        el('div',{},
+          el('div',{style:'font-size:13px;font-weight:500'},u.name),
+          el('div',{style:'font-size:11px;color:#888'},`${ups.length} engagement${ups.length>1?'s':''}`)
+        )
+      ),
+      ...ups.map(p=>el('div',{style:'display:flex;align-items:center;justify-content:space-between;margin-bottom:6px'},
+        el('span',{style:'font-size:12px'},p.name), badgeEl(computeStatus(p))))
+    );
+    userGrid.append(card);
+  });
+
+  return el('div',{},
+    ...alerts, statsGrid,
+    el('div',{cls:'section-header',style:'margin-top:24px'},
+      el('div',{cls:'section-title'},'All engagements'),
+      el('button',{cls:'btn btn-sm',onClick:()=>{ST.view='projects';render();}},'View all')
+    ),
+    buildTable(ST.projects),
+    el('div',{cls:'section-title',style:'margin-top:24px;margin-bottom:14px'},'Team overview'),
+    userGrid
+  );
+}
+
+/* ── TABLE ── */
+function buildTable(projects) {
+  if (!projects.length) return el('div',{cls:'empty'},el('i',{cls:'ti ti-folder-off'}),'No engagements found');
+  const hdr = el('div',{cls:'table-header'},
+    el('div',{},'Engagement'),el('div',{},'Status'),el('div',{},'Priority'),el('div',{},'Progress'),el('div',{},'Due date'),el('div',{})
+  );
+  const rows = projects.map(p=>{
+    const cs = computeStatus(p);
+    const owner = getUser(p.ownerId);
+    const nc = (p.notes||[]).length;
+    const pct = nc > 0 ? el('span',{style:'margin-left:6px;font-size:10px;color:#888'},'💬 '+nc) : null;
+    return el('div',{cls:'project-row',onClick:()=>{ST.selectedProject=p.id;ST.detailTab='details';render();}},
+      el('div',{},
+        el('div',{cls:'project-name'},p.name),
+        el('div',{cls:'project-meta'},owner?owner.name:'', ` · ${p.state||''}`, pct||'')
+      ),
+      el('div',{},badgeEl(cs)),
+      el('div',{style:'display:flex;align-items:center;font-size:12px;color:#888'},
+        el('span',{cls:`priority-dot priority-${p.priority}`}),
+        p.priority.charAt(0).toUpperCase()+p.priority.slice(1)
+      ),
+      el('div',{},
+        pBar(p.progress, cs==='overdue'?'#E24B4A':cs==='approaching'?'#EF9F27':'#1D9E75'),
+        el('div',{cls:'progress-pct'},`${p.progress}%`)
+      ),
+      el('div',{style:`font-size:12px;color:${cs==='overdue'?'#A32D2D':cs==='approaching'?'#854F0B':'#888'}`},fmtDate(p.dueDate)),
+      el('div',{cls:'row-actions'},
+        el('button',{cls:'icon-btn',title:'Edit',onClick:(ev)=>{ev.stopPropagation();openEdit(p);}},el('i',{cls:'ti ti-edit',style:'font-size:14px'})),
+        el('button',{cls:'icon-btn',title:'Delete',onClick:(ev)=>{
+          ev.stopPropagation();
+          if(confirm('Delete this engagement?')){
+            ST.projects=ST.projects.filter(x=>x.id!==p.id);
+            if(ST.selectedProject===p.id) ST.selectedProject=null;
+            persist();render();
+          }
+        }},el('i',{cls:'ti ti-trash',style:'font-size:14px;color:#A32D2D'}))
+      )
+    );
+  });
+  return el('div',{cls:'project-table'},hdr,...rows);
+}
+
+/* ── DETAIL PANEL ── */
+function buildDetail(pid) {
+  const p = ST.projects.find(x=>x.id===pid);
+  if (!p) return null;
+  const cs = computeStatus(p);
+  const owner = getUser(p.ownerId);
+
+  const tabs = el('div',{cls:'detail-tabs'},
+    el('div',{cls:`detail-tab${ST.detailTab==='details'?' active':''}`,onClick:()=>{ST.detailTab='details';render();}},'Details'),
+    el('div',{cls:`detail-tab${ST.detailTab==='notes'?' active':''}`,  onClick:()=>{ST.detailTab='notes';render();}},
+      `Notes${(p.notes||[]).length>0?' ('+p.notes.length+')':''}`)
+  );
+
+  let tabContent;
+
+  if (ST.detailTab==='details') {
+    const stack = el('div',{cls:'avatar-stack'});
+    (p.assignees||[]).forEach(uid=>stack.append(avEl(uid,22)));
+    const cRows = ST.fields.map(f=>{
+      let v=p[f.key];
+      if(f.type==='checkbox') v=v?'Yes':'No';
+      if(!v&&v!==0) v='—';
+      return el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},f.label),el('span',{},String(v)));
+    });
+    tabContent = el('div',{cls:'detail-scroll'},
+      el('div',{style:'display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:10px'},
+        el('div',{},el('h2',{},p.name),badgeEl(cs)),
+        el('button',{cls:'icon-btn',onClick:()=>{ST.selectedProject=null;render();}},el('i',{cls:'ti ti-x'}))
+      ),
+      p.description?el('p',{style:'font-size:13px;color:#888;line-height:1.6;margin-bottom:14px'},p.description):null,
+      el('div',{style:'margin-bottom:14px'},
+        el('div',{style:'display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px'},
+          el('span',{style:'color:#888'},'Progress'),el('span',{style:'font-weight:500'},`${p.progress}%`)),
+        pBar(p.progress,cs==='overdue'?'#E24B4A':cs==='approaching'?'#EF9F27':'#1D9E75')
+      ),
+      el('div',{cls:'detail-section'},
+        el('h3',{},'Details'),
+        el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},'Owner'),
+          el('div',{style:'display:flex;align-items:center;gap:6px'},avEl(p.ownerId,20),el('span',{style:'font-size:13px'},owner?.name||'—'))),
+        el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},'Team'),stack),
+        el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},'Priority'),
+          el('div',{style:'display:flex;align-items:center;gap:5px;font-size:13px'},
+            el('span',{cls:`priority-dot priority-${p.priority}`}),p.priority)),
+        el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},'Due date'),
+          el('span',{style:`color:${cs==='overdue'?'#A32D2D':cs==='approaching'?'#854F0B':'inherit'};font-size:13px`},fmtDate(p.dueDate))),
+        el('div',{cls:'detail-row'},el('span',{cls:'detail-key'},'Created'),el('span',{style:'font-size:13px'},fmtDate(p.createdAt))),
+      ),
+      ST.fields.length?el('div',{cls:'detail-section'},el('h3',{},'Engagement fields'),...cRows):null,
+      el('div',{style:'margin-top:16px;display:flex;gap:8px'},
+        el('button',{cls:'btn btn-primary btn-sm',style:'flex:1',onClick:()=>openEdit(p)},el('i',{cls:'ti ti-edit'}),' Edit'),
+        p.status!=='needs-approval'
+          ?el('button',{cls:'btn btn-sm',style:'flex:1',onClick:()=>{p.status='needs-approval';persist();render();}},el('i',{cls:'ti ti-thumb-up'}),' Submit for approval')
+          :el('button',{cls:'btn btn-sm',style:'flex:1;background:#EAF3DE;color:#3B6D11;border-color:#C0DD97',
+              onClick:()=>{p.status='completed';p.progress=100;persist();render();}},el('i',{cls:'ti ti-check'}),' Approve & complete')
+      )
+    );
+  } else {
+    // Notes tab
+    const sorted = (p.notes||[]).slice().sort((a,b)=>new Date(a.timestamp)-new Date(b.timestamp));
+    const list = sorted.length
+      ? el('div',{cls:'notes-log'},...sorted.map(n=>{
+          const u=getUser(n.authorId);
+          const tc=`note-type-${(n.type||'general').toLowerCase()}`;
+          return el('div',{cls:'note-entry'},
+            el('div',{cls:'note-meta'},
+              u?avEl(n.authorId,20):null,
+              el('span',{cls:'note-author'},u?u.name:'Unknown'),
+              el('span',{cls:'note-time'},fmtTime(n.timestamp)),
+              el('span',{cls:`note-type-badge ${tc}`},n.type||'General')
+            ),
+            el('p',{cls:'note-text'},n.text)
+          );
+        }))
+      : el('div',{style:'text-align:center;padding:30px;color:#888;font-size:13px'},'No notes yet. Add the first one below.');
+
+    tabContent = el('div',{style:'flex:1;overflow-y:auto;padding:16px'},list);
+  }
+
+  const panel = el('div',{cls:'detail-panel'},tabs,tabContent);
+
+  if (ST.detailTab==='notes') {
+    const ta = el('textarea',{placeholder:'Add a note, update, or flag an issue...'});
+    const typeSel = el('select',{cls:'note-type-sel'},...NOTE_TYPES.map(t=>{const o=document.createElement('option');o.value=t;o.textContent=t;return o;}));
+    panel.append(el('div',{cls:'note-input-area'},
+      ta,
+      el('div',{cls:'note-controls'},
+        typeSel,
+        el('button',{cls:'btn btn-primary btn-sm',onClick:()=>{
+          const txt=ta.value.trim();
+          if(!txt)return;
+          if(!p.notes)p.notes=[];
+          p.notes.push({id:'n'+Date.now(),authorId:CURRENT_USER.id,text:txt,type:typeSel.value,timestamp:new Date().toISOString()});
+          persist();render();
+        }},el('i',{cls:'ti ti-send'}),' Add note')
+      )
+    ));
+  }
+  return panel;
+}
+
+/* ── PROJECTS VIEW ── */
+function buildProjectsView(mine=false) {
+  let ps = mine ? ST.projects.filter(p=>p.ownerId===CURRENT_USER.id||p.assignees.includes(CURRENT_USER.id)) : ST.projects;
+  const fmap={overdue:'overdue',approaching:'approaching','needs-approval':'needs-approval',completed:'completed'};
+  if(ST.filter!=='all'&&fmap[ST.filter]) ps=ps.filter(p=>computeStatus(p)===fmap[ST.filter]);
+  const btns=['all','overdue','approaching','needs-approval','completed'].map(f=>
+    el('button',{cls:`filter-btn${ST.filter===f?' active':''}`,onClick:()=>{ST.filter=f;render();}},
+      f==='all'?'All':STATUS_CONFIG[f]?.label||f));
+  return el('div',{},
+    el('div',{cls:'section-header'},
+      el('div',{cls:'section-title'},mine?'My Audits':`All Engagements (${ps.length})`),
+      el('div',{cls:'filters'},...btns)
+    ),
+    buildTable(ps)
+  );
+}
+
+/* ── FIELD SETTINGS ── */
+function buildFields() {
+  const icons={text:'ti-text-size',number:'ti-123',date:'ti-calendar',select:'ti-list',checkbox:'ti-checkbox'};
+  const rows=ST.fields.map(f=>
+    el('div',{cls:'field-item'},
+      el('i',{cls:`ti ${icons[f.type]||'ti-variable'}`,style:'font-size:16px;color:#888'}),
+      el('span',{cls:'field-label-text'},f.label),
+      el('span',{cls:'tag'},f.type),
+      el('button',{cls:'icon-btn',onClick:()=>{ST.fields=ST.fields.filter(x=>x.id!==f.id);persist();render();}},
+        el('i',{cls:'ti ti-trash',style:'font-size:14px;color:#A32D2D'}))
+    )
+  );
+  const labelIn=el('input',{type:'text',placeholder:'Field name'});
+  const typeSel=el('select',{},...['text','number','date','select','checkbox'].map(t=>{const o=document.createElement('option');o.value=t;o.textContent=t.charAt(0).toUpperCase()+t.slice(1);return o;}));
+  return el('div',{},
+    el('div',{cls:'section-header'},el('div',{cls:'section-title'},'Custom Fields')),
+    el('div',{style:'background:#fff;border-radius:10px;border:0.5px solid rgba(0,0,0,0.12);padding:16px'},
+      el('div',{style:'font-size:12px;color:#888;margin-bottom:12px'},'Fields captured for every engagement. Add or remove as your workflow evolves.'),
+      ...rows,
+      el('div',{style:'border-top:0.5px solid rgba(0,0,0,0.1);padding-top:14px;margin-top:4px'},
+        el('div',{style:'font-size:13px;font-weight:500;margin-bottom:10px'},'Add new field'),
+        el('div',{style:'display:flex;gap:8px;align-items:flex-end'},
+          el('div',{cls:'form-group',style:'flex:1'},el('label',{},'Field name'),labelIn),
+          el('div',{cls:'form-group'},el('label',{},'Type'),typeSel),
+          el('button',{cls:'btn btn-primary',onClick:()=>{
+            if(!labelIn.value.trim())return;
+            ST.fields.push({id:'cf'+Date.now(),label:labelIn.value.trim(),type:typeSel.value,key:labelIn.value.trim().replace(/\s+/g,'_').toLowerCase()});
+            persist();render();
+          }},el('i',{cls:'ti ti-plus'}),' Add')
+        )
+      )
+    )
+  );
+}
+
+/* ── MODAL ── */
+function openEdit(p=null) {
+  ST.editingProject=p;
+  ST.formData=p?{...p}:{name:'',description:'',status:'not-started',priority:'medium',progress:0,dueDate:'',ownerId:CURRENT_USER.id,assignees:[CURRENT_USER.id],state:'',fiscalYear:'',engagementType:'',notes:[]};
+  ST.modal='project';render();
+}
+
+function buildModal() {
+  const isEdit=!!ST.editingProject;
+  const fd=ST.formData;
+  const statusSel=el('select',{onChange:e=>fd.status=e.target.value},...Object.entries(STATUS_CONFIG).map(([k,v])=>{const o=document.createElement('option');o.value=k;o.textContent=v.label;if(k===fd.status)o.selected=true;return o;}));
+  const priSel=el('select',{onChange:e=>fd.priority=e.target.value},...['high','medium','low'].map(p=>{const o=document.createElement('option');o.value=p;o.textContent=p.charAt(0).toUpperCase()+p.slice(1);if(p===fd.priority)o.selected=true;return o;}));
+  const chips=USERS.map(u=>{
+    const sel=(fd.assignees||[]).includes(u.id);
+    const c=el('div',{cls:`user-chip-sel${sel?' selected':''}`,onClick:()=>{
+      const a=fd.assignees||[];
+      if(a.includes(u.id))fd.assignees=a.filter(x=>x!==u.id);else fd.assignees=[...a,u.id];
+      c.className=`user-chip-sel${fd.assignees.includes(u.id)?' selected':''}`;
+    }},el('div',{cls:'avatar',style:`width:18px;height:18px;font-size:8px;background:${u.color};color:${u.textColor}`},u.initials),u.name);
+    return c;
+  });
+  const customIn=ST.fields.map(f=>{
+    let inp;
+    if(f.type==='checkbox'){inp=el('input',{type:'checkbox',style:'width:auto',onChange:e=>fd[f.key]=e.target.checked});if(fd[f.key])inp.checked=true;}
+    else if(f.type==='select'&&f.options){
+      const opts=f.options.split(',').map(o=>{const opt=document.createElement('option');opt.value=o.trim();opt.textContent=o.trim();if(o.trim()===fd[f.key])opt.selected=true;return opt;});
+      inp=el('select',{onChange:e=>fd[f.key]=e.target.value},el('option',{value:''},'Select...'),...opts);
+    }else{inp=el('input',{type:f.type==='number'?'number':f.type==='date'?'date':'text',value:fd[f.key]||'',onChange:e=>fd[f.key]=f.type==='number'?Number(e.target.value):e.target.value});}
+    return el('div',{cls:'form-group'},el('label',{},f.label),inp);
+  });
+  const nameIn=el('input',{type:'text',value:fd.name||'',placeholder:'e.g. Audit TX',onChange:e=>fd.name=e.target.value});
+  const descIn=el('textarea',{placeholder:'Engagement description...',onChange:e=>fd.description=e.target.value},fd.description||'');
+  const progIn=el('input',{type:'number',min:'0',max:'100',value:fd.progress||0,onChange:e=>fd.progress=Math.min(100,Math.max(0,Number(e.target.value)))});
+  const dueIn=el('input',{type:'date',value:fd.dueDate||'',onChange:e=>fd.dueDate=e.target.value});
+
+  function doSave(){
+    if(!fd.name?.trim()){alert('Please enter an engagement name.');return;}
+    if(isEdit){
+      const idx=ST.projects.findIndex(p=>p.id===ST.editingProject.id);
+      if(idx!==-1)ST.projects[idx]={...ST.editingProject,...fd,notes:ST.editingProject.notes||[]};
+    }else{
+      ST.projects.unshift({...fd,id:'p'+Date.now(),createdAt:new Date().toISOString().split('T')[0],notes:[]});
+    }
+    ST.modal=null;persist();render();
+  }
+
+  return el('div',{cls:'modal-bg',onClick:e=>{if(e.target===e.currentTarget){ST.modal=null;render();}}},
+    el('div',{cls:'modal'},
+      el('div',{cls:'modal-header'},
+        el('div',{cls:'modal-title'},isEdit?'Edit engagement':'New engagement'),
+        el('button',{cls:'icon-btn',onClick:()=>{ST.modal=null;render();}},el('i',{cls:'ti ti-x'}))
+      ),
+      el('div',{cls:'modal-body'},
+        el('div',{cls:'form-grid'},
+          el('div',{cls:'form-group full'},el('label',{},'Engagement name *'),nameIn),
+          el('div',{cls:'form-group full'},el('label',{},'Description'),descIn),
+          el('div',{cls:'form-group'},el('label',{},'Status'),statusSel),
+          el('div',{cls:'form-group'},el('label',{},'Priority'),priSel),
+          el('div',{cls:'form-group'},el('label',{},'Progress (%)'),progIn),
+          el('div',{cls:'form-group'},el('label',{},'Due date'),dueIn),
+          el('div',{cls:'form-group full'},el('label',{},'Team members'),el('div',{cls:'user-select'},...chips)),
+          ...customIn
+        )
+      ),
+      el('div',{cls:'modal-footer'},
+        el('button',{cls:'btn',onClick:()=>{ST.modal=null;render();}},'Cancel'),
+        el('button',{cls:'btn btn-primary',onClick:doSave},isEdit?'Save changes':'Create engagement')
+      )
+    )
+  );
+}
+
+/* ── RENDER ── */
+function render() {
+  const app = document.getElementById('app');
+  app.innerHTML = '';
+  const sidebar = buildSidebar();
+  const main = el('div',{cls:'main'});
+  const titles = {dashboard:'Dashboard',projects:'All Engagements',mine:'My Audits',fields:'Field Settings'};
+  const topbar = el('div',{cls:'topbar'},
+    el('h1',{},titles[ST.view]||''),
+    ST.view!=='fields'
+      ?el('button',{cls:'btn btn-primary',onClick:()=>openEdit()},el('i',{cls:'ti ti-plus'}),' New engagement')
+      :el('span',{})
+  );
+  let content;
+  if(ST.view==='dashboard')     content=buildDashboard();
+  else if(ST.view==='projects') content=buildProjectsView(false);
+  else if(ST.view==='mine')     content=buildProjectsView(true);
+  else                          content=buildFields();
+
+  const wrap=el('div',{cls:'main-and-detail'},el('div',{cls:'content'},content));
+  if(ST.selectedProject){const dp=buildDetail(ST.selectedProject);if(dp)wrap.append(dp);}
+  main.append(topbar,wrap);
+  app.append(sidebar,main);
+  if(ST.modal) app.append(buildModal());
+}
+
+render();
+</script>
+</body>
+</html>
